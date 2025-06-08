@@ -3,17 +3,29 @@ import { usernameValidation } from "./username.schema";
 
 export const signupSchema = z
   .object({
-    fullname: z
+    firstName: z
       .string()
-      .min(4, "Full name must be at least 4 characters")
-      .max(30, "Full name must be at most 30 characters"),
+      .min(3, "Too short, Min 3 chars")
+      .max(20, "Too long, Max 20 chars"),
+    lastName: z
+      .string()
+      .min(3, "Too short, Min 3 chars")
+      .max(20, "Too long, Max 20 chars"),
     username: usernameValidation,
+    dob: z.string().refine(
+      (val) => {
+        const date = new Date(val);
+        return !isNaN(date.getTime());
+      },
+      { message: "Invalid date" }
+    ),
+    gender: z.enum(["male", "female", "custom"]),
     mobileno: z.string().length(10, "Mobile number must be 10 digits"),
     email: z.string().email("Invalid email address"),
     password: z
       .string()
-      .min(8, "Password must be at least 8 characters")
-      .max(50, "Password must be at most 50 characters"),
+      .min(8, "Too short, must 8 characters required")
+      .max(50),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

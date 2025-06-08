@@ -1,31 +1,46 @@
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/User.model";
-import { deleteFromCloudinary, uploadOnCloudinary, UploadResponse } from "@/utils/cloudinary.util";
+import {
+  deleteFromCloudinary,
+  uploadOnCloudinary,
+  UploadResponse,
+} from "@/utils/cloudinary.util";
 import bcryptjs from "bcryptjs";
+import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 
 export async function POST(request: Request) {
   await dbConnect();
 
   try {
     const formData = await request.formData();
-    const data = {
-      avatar: formData.get("avatar"),
-      fullname: formData.get("fullname"),
-      username: formData.get("username") as string,
-      email: formData.get("email") as string,
-      mobileno: formData.get("mobileno"),
-      password: formData.get("password") as string,
-    };
+    const avatar = formData.get("avatar") as File;
+    const firstName = formData.get("firstName") as string;
+    const lastName = formData.get("lastName") as string;
+    const dob = formData.get("dob") as string;
+    const gender = formData.get("gender") as string;
+    const username = formData.get("username") as string;
+    const mobileno = formData.get("mobileno") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const verifyUrl = formData.get("verifyUrl") as string;
 
-    const { avatar, fullname, username, mobileno, email, password } = data;
-
-    if (!avatar || !fullname || !username || !mobileno || !email || !password) {
+    if (
+      !avatar ||
+      !firstName ||
+      !lastName ||
+      !dob ||
+      !gender ||
+      !username ||
+      !mobileno ||
+      !email ||
+      !password ||
+      !verifyUrl
+    ) {
       return Response.json(
         { success: false, message: "All fields are required" },
         { status: 400 }
       );
     }
-
     const hashedPassword = await bcryptjs.hash(password, 10);
 
     let avatarUrl = "";
@@ -46,6 +61,9 @@ export async function POST(request: Request) {
         );
       }
     }
+
+    const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verifyCodeExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     const existingUserByEmail = await UserModel.findOne({ email });
     const existingUserByMobile = await UserModel.findOne({ mobileno });
@@ -70,26 +88,54 @@ export async function POST(request: Request) {
       await deleteFromCloudinary(userToUpdate.avatar);
       Object.assign(userToUpdate, {
         avatar: avatarUrl,
-        fullname,
+        firstName,
+        lastName,
         username: username.toLowerCase(),
+        dob: new Date(dob),
+        gender,
         mobileno,
         email: email.toLowerCase(),
         password: hashedPassword,
+        verifyCode,
+        verifyCodeExpiry,
       });
       await userToUpdate.save();
     } else {
       const newUser = new UserModel({
         avatar: avatarUrl,
-        fullname,
+        firstName,
+        lastName,
         username: username.toLowerCase(),
+        dob: new Date(dob),
+        gender,
         mobileno,
         email: email.toLowerCase(),
         password: hashedPassword,
+        verifyCode,
+        verifyCodeExpiry,
       });
       await newUser.save();
     }
+
+    const emailResponse = await sendVerificationEmail(
+      email,
+      username,
+      verifyCode,
+      verifyUrl
+    );
+
+    if (!emailResponse.success) {
+      return Response.json(
+        { success: false, message: emailResponse.message },
+        { status: 500 }
+      );
+    }
+
     return Response.json(
-      { success: true, message: "Signup successful." },
+      {
+        success: true,
+        message: "Signup successful. Please verify your email.",
+      },
       { status: 201 }
     );
   } catch (error: any) {
