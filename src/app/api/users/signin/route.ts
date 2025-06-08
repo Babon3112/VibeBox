@@ -1,6 +1,8 @@
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/User.model";
 import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +12,7 @@ export async function POST(req: Request) {
     const { identifier, password } = body;
 
     if (!identifier || !password) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: "All fields are required" },
         { status: 400 }
       );
@@ -21,36 +23,51 @@ export async function POST(req: Request) {
     });
 
     if (!user) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: "User not found" },
         { status: 404 }
       );
     }
 
     const isMatch = await bcryptjs.compare(password, user.password);
-
     if (!isMatch) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: "Invalid password" },
         { status: 401 }
       );
     }
 
     if (!user.isverified) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, message: "Please verify your account first." },
         { status: 403 }
       );
     }
 
-    // In real apps, you'd set a cookie/token here
-    return Response.json(
+    // Create JWT token
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET!,
+      { expiresIn: "7d" }
+    );
+
+    // Set HTTP-only cookie
+    const response = NextResponse.json(
       { success: true, message: "Signin successful", userId: user._id },
       { status: 200 }
     );
+
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+    });
+
+    return response;
   } catch (error: any) {
     console.error("Signin Error:", error);
-    return Response.json(
+    return NextResponse.json(
       { success: false, message: error.message || "Signin failed." },
       { status: 500 }
     );
