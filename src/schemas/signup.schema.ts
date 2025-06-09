@@ -12,14 +12,18 @@ export const signupSchema = z
       .min(3, "Too short, Min 3 chars")
       .max(20, "Too long, Max 20 chars"),
     username: usernameValidation,
-    dob: z.string().refine(
-      (val) => {
-        const date = new Date(val);
-        return !isNaN(date.getTime());
-      },
-      { message: "Invalid date" }
-    ),
-    gender: z.enum(["male", "female", "custom"]),
+    dob_day: z
+    .string()
+    .refine((val) => parseInt(val) >= 1 && parseInt(val) <= 31, { message: "Invalid day" }),
+  dob_month: z
+    .string()
+    .refine((val) => parseInt(val) >= 1 && parseInt(val) <= 12, { message: "Invalid month" }),
+  dob_year: z
+    .string()
+    .refine((val) => parseInt(val) > 1900 && parseInt(val) <= new Date().getFullYear(), {
+      message: "Invalid year",
+    }),
+    gender: z.enum(["male", "female", "other"]),
     mobileno: z.string().length(10, "Mobile number must be 10 digits"),
     email: z.string().email("Invalid email address"),
     password: z

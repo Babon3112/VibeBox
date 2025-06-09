@@ -13,69 +13,53 @@ export async function POST(request: Request) {
 
   try {
     const formData = await request.formData();
-    const avatar = formData.get("avatar") as File;
-    const firstName = formData.get("firstName") as string;
-    const lastName = formData.get("lastName") as string;
-    const dob = formData.get("dob") as string;
-    const gender = formData.get("gender") as string;
-    const username = formData.get("username") as string;
-    const mobileno = formData.get("mobileno") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const verifyUrl = formData.get("verifyUrl") as string;
+    const fields = [
+      "avatar", "firstName", "lastName", "dob", "gender",
+      "username", "mobileno", "email", "password", "verifyUrl"
+    ];
+    const values: Record<string, string | File> = {};
 
-    if (
-      !avatar ||
-      !firstName ||
-      !lastName ||
-      !dob ||
-      !gender ||
-      !username ||
-      !mobileno ||
-      !email ||
-      !password ||
-      !verifyUrl
-    ) {
-      return Response.json(
-        { success: false, message: "All fields are required" },
-        { status: 400 }
-      );
+    for (const field of fields) {
+      const value = formData.get(field);
+      if (!value) {
+        return Response.json(
+          { success: false, message: "All fields are required" },
+          { status: 400 }
+        );
+      }
+      values[field] = value;
     }
-    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    const hashedPassword = await bcryptjs.hash(values.password as string, 10);
 
     let avatarUrl = "";
-    if (avatar && avatar instanceof File) {
-      const buffer = Buffer.from(await avatar.arrayBuffer());
-      const uploadResponse: UploadResponse = await uploadOnCloudinary(
-        buffer,
-        "VibeBox/Avatar"
-      );
-
-      if (uploadResponse.url) {
-        avatarUrl = uploadResponse.url;
-      } else {
+    if (values.avatar instanceof File) {
+      const buffer = Buffer.from(await values.avatar.arrayBuffer());
+      const uploadResponse: UploadResponse = await uploadOnCloudinary(buffer, "VibeBox/Avatar");
+      if (!uploadResponse.url) {
         console.error("Avatar upload failed:", uploadResponse.error);
         return Response.json(
           { success: false, message: "Avatar upload failed" },
           { status: 500 }
         );
       }
+      avatarUrl = uploadResponse.url;
     }
 
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const verifyCodeExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const verifyCodeExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
-    const existingUserByEmail = await UserModel.findOne({ email });
-    const existingUserByMobile = await UserModel.findOne({ mobileno });
+    const existingUserByEmail = await UserModel.findOne({ email: values.email });
+    const existingUserByMobile = await UserModel.findOne({ mobileno: values.mobileno });
 
-    if (existingUserByEmail && existingUserByEmail.isverified) {
+    if (existingUserByEmail?.isverified) {
       return Response.json(
         { success: false, message: "Email is already registered." },
         { status: 400 }
       );
     }
 
-    if (existingUserByMobile && existingUserByMobile.isverified) {
+    if (existingUserByMobile?.isverified) {
       return Response.json(
         { success: false, message: "Mobile number is already registered." },
         { status: 400 }
@@ -84,44 +68,34 @@ export async function POST(request: Request) {
 
     const userToUpdate = existingUserByEmail || existingUserByMobile;
 
+    const userData = {
+      avatar: avatarUrl,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      username: (values.username as string).toLowerCase(),
+      dob: new Date(values.dob as string),
+      gender: values.gender,
+      mobileno: values.mobileno,
+      email: (values.email as string).toLowerCase(),
+      password: hashedPassword,
+      verifyCode,
+      verifyCodeExpiry,
+    };
+
     if (userToUpdate) {
       await deleteFromCloudinary(userToUpdate.avatar);
-      Object.assign(userToUpdate, {
-        avatar: avatarUrl,
-        firstName,
-        lastName,
-        username: username.toLowerCase(),
-        dob: new Date(dob),
-        gender,
-        mobileno,
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        verifyCode,
-        verifyCodeExpiry,
-      });
+      Object.assign(userToUpdate, userData);
       await userToUpdate.save();
     } else {
-      const newUser = new UserModel({
-        avatar: avatarUrl,
-        firstName,
-        lastName,
-        username: username.toLowerCase(),
-        dob: new Date(dob),
-        gender,
-        mobileno,
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        verifyCode,
-        verifyCodeExpiry,
-      });
+      const newUser = new UserModel(userData);
       await newUser.save();
     }
 
     const emailResponse = await sendVerificationEmail(
-      email,
-      username,
+      values.email as string,
+      values.username as string,
       verifyCode,
-      verifyUrl
+      values.verifyUrl as string
     );
 
     if (!emailResponse.success) {
@@ -132,21 +106,13 @@ export async function POST(request: Request) {
     }
 
     return Response.json(
-      {
-        success: true,
-        message: "Signup successful. Please verify your email.",
-      },
+      { success: true, message: "Signup successful. Please verify your email." },
       { status: 201 }
     );
-  } catch (error: unknown) {
-    let errorMessage = "Signup failed";
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
+  } catch (error) {
     console.error("Signup Error:", error);
     return Response.json(
-      { success: false, message: errorMessage },
+      { success: false, message: error instanceof Error ? error.message : "Signup failed." },
       { status: 500 }
     );
   }

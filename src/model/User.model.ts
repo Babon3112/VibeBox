@@ -13,7 +13,7 @@ const UserSchema = new Schema(
       lowercase: true,
     },
     dob: { type: Date, required: true },
-    gender: { type: String, enum: ["male", "female", "custom"], required: true },
+    gender: { type: String, enum: ["male", "female", "other"], required: true },
     mobileno: {
       type: String,
       required: true,

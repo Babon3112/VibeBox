@@ -8,8 +8,7 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
 
-    const body = await req.json();
-    const { identifier, password } = body;
+    const { identifier, password } = await req.json();
 
     if (!identifier || !password) {
       return NextResponse.json(
@@ -44,12 +43,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
       expiresIn: "7d",
     });
 
-    // Set HTTP-only cookie
     const response = NextResponse.json(
       { success: true, message: "Signin successful", userId: user._id },
       { status: 200 }
@@ -58,20 +55,18 @@ export async function POST(req: Request) {
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 
     return response;
-  } catch (error: unknown) {
-    let errorMessage = "Something went wrong";
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
+  } catch (error) {
     console.error("Signin Error:", error);
     return NextResponse.json(
-      { success: false, message: errorMessage || "Signin failed." },
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "Signin failed.",
+      },
       { status: 500 }
     );
   }
