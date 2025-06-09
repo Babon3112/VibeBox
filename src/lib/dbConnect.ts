@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
 
+declare global {
+  var mongooseConnection: number | undefined;
+}
+
 // Try to reuse a previous connection stored in global memory
-let isConnected: number | undefined = (global as any).mongooseConnection;
+let isConnected: number | undefined = global.mongooseConnection;
 
 async function dbConnect(): Promise<void> {
   // ✅ If already connected, don't connect again
@@ -18,7 +22,7 @@ async function dbConnect(): Promise<void> {
     isConnected = db.connections[0].readyState;
 
     // 💾 Save it in global memory, so we can reuse it next time
-    (global as any).mongooseConnection = isConnected;
+    global.mongooseConnection = isConnected;
 
     console.log("✅ Database connected");
   } catch (error) {

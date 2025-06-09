@@ -138,10 +138,15 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    let errorMessage = "Signup failed";
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
     console.error("Signup Error:", error);
     return Response.json(
-      { success: false, message: error.message || "Signup failed." },
+      { success: false, message: errorMessage },
       { status: 500 }
     );
   }

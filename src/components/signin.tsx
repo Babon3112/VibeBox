@@ -75,10 +75,21 @@ const Signin = () => {
           router.push("/");
         }, 1500);
       }
-    } catch (error: any) {
-      const message = error?.response?.data?.message || "Signin failed";
+    } catch (error: unknown) {
+      let errorMessage = "Signin failed.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as any).response?.data?.message === "string"
+      ) {
+        errorMessage = (error as any).response.data.message;
+      }
+
       setSnackbarSeverity("error");
-      setSnackbarMessage(message);
+      setSnackbarMessage(errorMessage);
       setSnackbarOpen(true);
     } finally {
       setIsSubmitting(false);
@@ -89,16 +100,12 @@ const Signin = () => {
     <div className="flex min-h-screen w-full bg-[#FFF5F5] p-6 justify-center">
       {/* Left branding side */}
       <div className="hidden md:flex flex-col justify-center items-start flex-1 bg-red-600 text-white p-12 rounded-l-3xl shadow-2xl max-w-lg">
-        <h1 className="text-5xl font-extrabold mb-6 tracking-tight">
-          VibeBox
-        </h1>
+        <h1 className="text-5xl font-extrabold mb-6 tracking-tight">VibeBox</h1>
         <p className="text-lg leading-relaxed mb-8">
-          Experience the ultimate platform to connect, create, and celebrate your vibe.
-          Join the community and unlock your potential.
+          Experience the ultimate platform to connect, create, and celebrate
+          your vibe. Join the community and unlock your potential.
         </p>
-        <p className="italic text-sm opacity-75">
-          Your vibe, your story.
-        </p>
+        <p className="italic text-sm opacity-75">Your vibe, your story.</p>
       </div>
 
       {/* Right signin form side */}

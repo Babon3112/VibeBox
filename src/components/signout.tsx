@@ -47,7 +47,7 @@ const SignOut = () => {
         setSnackbarMessage(data.message || "Signout failed.");
         setSnackbarOpen(true);
       }
-    } catch (error) {
+    } catch {
       setSnackbarSeverity("error");
       setSnackbarMessage("An error occurred during signout.");
       setSnackbarOpen(true);

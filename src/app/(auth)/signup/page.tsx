@@ -12,6 +12,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import * as React from "react";
 import { VisibilityOff, Visibility } from "@mui/icons-material";
+import Image from "next/image";
 
 const SignupPage = () => {
   const router = useRouter();
@@ -102,9 +103,19 @@ const SignupPage = () => {
           router.replace(`/verify/${data.username}`);
         }, 1500);
       }
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || error.message || "Signup failed.";
+    } catch (error: unknown) {
+      let errorMessage = "Signup failed.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as any).response?.data?.message === "string"
+      ) {
+        errorMessage = (error as any).response.data.message;
+      }
+
       setSnackbarSeverity("error");
       setSnackbarMessage(errorMessage);
       setSnackbarOpen(true);
@@ -138,14 +149,15 @@ const SignupPage = () => {
             htmlFor="avatar"
             className="cursor-pointer relative rounded-full overflow-hidden w-28 h-28 shadow-xl border-2 border-red-500 hover:border-orange-500 transition-colors"
           >
-            <img
+            <Image
               src={
                 avatar
                   ? URL.createObjectURL(avatar)
                   : "https://res.cloudinary.com/arnabcloudinary/image/upload/v1713075500/EazyBuy/Avatar/upload-avatar.png"
               }
               alt="Avatar Preview"
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
             />
             <input
               type="file"

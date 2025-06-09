@@ -45,11 +45,9 @@ export async function POST(req: Request) {
     }
 
     // Create JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
+      expiresIn: "7d",
+    });
 
     // Set HTTP-only cookie
     const response = NextResponse.json(
@@ -65,10 +63,15 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    let errorMessage = "Something went wrong";
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
     console.error("Signin Error:", error);
     return NextResponse.json(
-      { success: false, message: error.message || "Signin failed." },
+      { success: false, message: errorMessage || "Signin failed." },
       { status: 500 }
     );
   }
