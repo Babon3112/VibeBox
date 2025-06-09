@@ -27,7 +27,7 @@ const SignupPage = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<z.infer<typeof signupSchema>>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -136,11 +136,11 @@ const SignupPage = () => {
 
   return (
     <div className="flex flex-col w-full min-h-screen justify-center items-center bg-[#FFF5F5] p-6">
-      <h1 className="text-5xl font-bold mb-6 tracking-tight text-red-600">
+      <h1 className="text-5xl font-bold mb-6 tracking-tight text-red-500">
         VibeBox
       </h1>
-      <div className="flex flex-col justify-center items-center shadow-2xl px-8 py-6 border border-red-600 rounded-3xl bg-white max-w-xl w-full">
-        <h1 className="text-3xl font-bold mb-4 text-center text-red-600 tracking-wide">
+      <div className="flex flex-col justify-center items-center shadow-2xl px-8 py-6 border border-red-500 rounded-3xl bg-white max-w-xl w-full">
+        <h1 className="text-3xl font-bold mb-4 text-center text-red-500 tracking-wide">
           Create Your Account
         </h1>
 
@@ -281,9 +281,11 @@ const SignupPage = () => {
           </div>
           <input
             {...register("mobileno")}
-            type="number"
+            type="text"
             className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:border-red-500 placeholder:text-gray-400"
             placeholder="Mobile Number"
+            inputMode="numeric"
+            maxLength={10}
           />
           {errors.mobileno && (
             <p className="text-red-500 text-xs">{errors.mobileno.message}</p>
@@ -344,8 +346,8 @@ const SignupPage = () => {
           </span>
           <button
             type="submit"
-            className="bg-red-600 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition cursor-pointer disabled:bg-orange-500 disabled:cursor-not-allowed"
-            disabled={isSubmitting}
+            className="bg-red-500 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={isSubmitting || !isValid}
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center space-x-3">
@@ -362,7 +364,7 @@ const SignupPage = () => {
           Already have an account?{" "}
           <Link
             href="/"
-            className="text-red-600 hover:text-orange-500 underline"
+            className="text-red-500 hover:text-orange-500 underline"
           >
             Sign in
           </Link>

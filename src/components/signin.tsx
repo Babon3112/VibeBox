@@ -93,7 +93,7 @@ const Signin = () => {
 
   return (
     <div className="flex min-h-screen w-full bg-[#FFF5F5] p-6 justify-center">
-      <div className="hidden md:flex flex-col justify-center items-start flex-1 bg-red-600 text-white p-12 rounded-l-3xl shadow-2xl max-w-lg">
+      <div className="hidden md:flex flex-col justify-center items-start flex-1 bg-red-500 text-white p-12 rounded-l-3xl shadow-2xl max-w-lg">
         <h1 className="text-5xl font-extrabold mb-6 tracking-tight">VibeBox</h1>
         <p className="text-lg leading-relaxed mb-8">
           Experience the ultimate platform to connect, create, and celebrate
@@ -101,8 +101,8 @@ const Signin = () => {
         </p>
         <p className="italic text-sm opacity-75">Your vibe, your story.</p>
       </div>
-      <div className="flex flex-col justify-center items-center shadow-2xl p-8 border border-red-600 rounded-r-3xl bg-white max-w-md w-full">
-        <h1 className="text-3xl font-bold mb-6 text-center text-red-600 tracking-wide">
+      <div className="flex flex-col justify-center items-center shadow-2xl p-8 border border-red-500 rounded-r-3xl bg-white max-w-md w-full">
+        <h1 className="text-3xl font-bold mb-6 text-center text-red-500 tracking-wide">
           Welcome Back
         </h1>
         <form
@@ -151,7 +151,7 @@ const Signin = () => {
 
           <button
             type="submit"
-            className="bg-red-600 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:bg-orange-500"
+            className="bg-red-500 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:bg-gray-400"
             disabled={isSubmitting || !isValid}
           >
             {isSubmitting ? (
@@ -166,14 +166,14 @@ const Signin = () => {
         </form>
         <Link
           href="/forgotpassword"
-          className="text-red-600 text-sm hover:text-orange-500 mt-4 underline"
+          className="text-red-500 text-sm hover:text-orange-500 mt-4 underline"
         >
           Forgotten Password?
         </Link>
         <hr className="border-red-200 w-full my-4"/>
         <Link
           href="/signup"
-          className="bg-red-600 w-52 p-3 text-white font-bold hover:bg-orange-500 text-center rounded-xl flex items-center justify-center"
+          className="bg-red-500 w-52 p-3 text-white font-bold hover:bg-orange-500 text-center rounded-xl flex items-center justify-center"
         >
           Create new account
         </Link>

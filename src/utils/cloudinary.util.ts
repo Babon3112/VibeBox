@@ -46,7 +46,12 @@ export const uploadOnCloudinary = async (
         }
       );
 
+      // Compress and resize using sharp
       sharp(buffer)
+        .rotate()
+        .resize({ width: 800 })
+        .jpeg({ quality: 80 })
+        .toFormat("jpeg")
         .pipe(uploadStream)
         .on("error", (error: unknown) => {
           if (error instanceof Error) {
@@ -58,8 +63,7 @@ export const uploadOnCloudinary = async (
     });
   } catch (error: unknown) {
     console.error("Error uploading to Cloudinary:", error);
-    const message =
-      error instanceof Error ? error.message : "Upload failed";
+    const message = error instanceof Error ? error.message : "Upload failed";
     return { error: message };
   }
 };
@@ -78,8 +82,7 @@ export const deleteFromCloudinary = async (
     return response as CloudinaryDeleteResponse;
   } catch (error: unknown) {
     console.error("Error deleting from Cloudinary:", error);
-    const message =
-      error instanceof Error ? error.message : "Delete failed";
+    const message = error instanceof Error ? error.message : "Delete failed";
     return { error: message };
   }
 };
