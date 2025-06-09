@@ -1,4 +1,5 @@
 "use client";
+
 import { signinSchema } from "@/schemas/signin.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
@@ -6,11 +7,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import * as React from "react";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
+import CustomSnackbar from "./CustomSnackbar";
 
 const Signin = () => {
   const router = useRouter();
@@ -18,17 +18,18 @@ const Signin = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<z.infer<typeof signinSchema>>({
     resolver: zodResolver(signinSchema),
+    mode: "onChange",
     defaultValues: {
       identifier: "",
       password: "",
     },
   });
 
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isFocused, setIsFocused] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [passwordShow, setPasswordShow] = React.useState(false);
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState("");
@@ -77,19 +78,11 @@ const Signin = () => {
       }
     } catch (error: unknown) {
       let errorMessage = "Signin failed.";
-      if (error instanceof Error) {
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error &&
-        typeof (error as { response?: { data?: { message?: string } } })
-          .response?.data?.message === "string"
-      ) {
-        errorMessage = (error as { response?: { data?: { message?: string } } })
-          .response!.data!.message!;
       }
-
       setSnackbarSeverity("error");
       setSnackbarMessage(errorMessage);
       setSnackbarOpen(true);
@@ -100,7 +93,6 @@ const Signin = () => {
 
   return (
     <div className="flex min-h-screen w-full bg-[#FFF5F5] p-6 justify-center">
-      {/* Left branding side */}
       <div className="hidden md:flex flex-col justify-center items-start flex-1 bg-red-600 text-white p-12 rounded-l-3xl shadow-2xl max-w-lg">
         <h1 className="text-5xl font-extrabold mb-6 tracking-tight">VibeBox</h1>
         <p className="text-lg leading-relaxed mb-8">
@@ -109,13 +101,10 @@ const Signin = () => {
         </p>
         <p className="italic text-sm opacity-75">Your vibe, your story.</p>
       </div>
-
-      {/* Right signin form side */}
       <div className="flex flex-col justify-center items-center shadow-2xl p-8 border border-red-600 rounded-r-3xl bg-white max-w-md w-full">
         <h1 className="text-3xl font-bold mb-6 text-center text-red-600 tracking-wide">
           Welcome Back
         </h1>
-
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col items-center space-y-4 w-full"
@@ -128,20 +117,25 @@ const Signin = () => {
           {errors.identifier && (
             <p className="text-sm text-red-500">{errors.identifier.message}</p>
           )}
-          <label htmlFor="password" className="flex w-full">
+
+          <div className="flex w-full">
             <input
               {...register("password")}
               type={passwordShow ? "text" : "password"}
               placeholder="Password"
               className="border border-r-0 border-gray-300 p-3 rounded-l-lg w-full focus:outline-none focus:border-red-500 placeholder:text-gray-400"
+              aria-label="Password"
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
             />
             <button
               type="button"
               onClick={() => setPasswordShow(!passwordShow)}
-              className={`text-gray-500 border-gray-300 rounded-none rounded-r-lg hover:bg-white border border-l-0 bg-transparent p-3 ${
-                isFocused ? "outline-none border-red-500" : ""
+              aria-label={passwordShow ? "Hide password" : "Show password"}
+              className={`text-gray-500 rounded-none rounded-r-lg hover:bg-white border border-l-0 bg-transparent p-3 ${
+                isFocused
+                  ? "outline-none border-red-500 border-l-0"
+                  : "border-gray-300"
               }`}
             >
               {passwordShow ? (
@@ -150,15 +144,15 @@ const Signin = () => {
                 <Visibility className="w-5 h-5" />
               )}
             </button>
-          </label>
+          </div>
           {errors.password && (
             <p className="text-sm text-red-500">{errors.password.message}</p>
           )}
 
           <button
             type="submit"
-            className="bg-red-600 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition focus:outline-none focus:ring-4 focus:ring-orange-400/50 cursor-pointer disabled:cursor-not-allowed"
-            disabled={isSubmitting}
+            className="bg-red-600 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:bg-orange-500"
+            disabled={isSubmitting || !isValid}
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center space-x-3">
@@ -170,45 +164,27 @@ const Signin = () => {
             )}
           </button>
         </form>
-
-        <p className="mt-4 text-sm text-center text-gray-600 w-full">
-          New to VibeBox?{" "}
-          <Link
-            href="/signup"
-            className="text-red-600 hover:text-orange-500 underline"
-          >
-            Sign up
-          </Link>
-        </p>
-
         <Link
           href="/forgotpassword"
-          className="text-red-600 mt-1 text-sm hover:text-orange-500 underline"
+          className="text-red-600 text-sm hover:text-orange-500 mt-4 underline"
         >
-          Forgot Password?
+          Forgotten Password?
+        </Link>
+        <hr className="border-red-200 w-full my-4"/>
+        <Link
+          href="/signup"
+          className="bg-red-600 w-52 p-3 text-white font-bold hover:bg-orange-500 text-center rounded-xl flex items-center justify-center"
+        >
+          Create new account
         </Link>
       </div>
 
-      <Snackbar
+      <CustomSnackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
+        severity={snackbarSeverity}
+        message={snackbarMessage}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbarSeverity}
-          variant="filled"
-          sx={{
-            fontSize: "1.2rem",
-            borderRadius: 2,
-            alignItems: "center",
-            width: "100%",
-          }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      />
     </div>
   );
 };

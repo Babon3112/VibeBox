@@ -1,49 +1,31 @@
 "use client";
-import { signupSchema } from "@/schemas/signup.schema";
+import * as React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import axios from "axios";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import CircularProgress from "@mui/material/CircularProgress";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
-import * as React from "react";
-import { VisibilityOff, Visibility } from "@mui/icons-material";
 import Image from "next/image";
+import CircularProgress from "@mui/material/CircularProgress";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { signupSchema } from "@/schemas/signup.schema";
+import CustomSnackbar from "@/components/CustomSnackbar";
 
 const SignupPage = () => {
   const router = useRouter();
   const [avatar, setAvatar] = useState<File | null>(null);
+  const [dob_day, setDob_day] = useState("");
+  const [dob_month, setDob_month] = useState("");
+  const [dob_year, setDob_year] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFocused, setIsFocused] = React.useState(false);
-  const [passwordShow, setPasswordShow] = React.useState(false);
+  const [passwordShow, setPasswordShow] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
     "success"
   );
-
-  function GradientCircularProgress() {
-    return (
-      <>
-        <svg width={0} height={0}>
-          <defs>
-            <linearGradient id="my_gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#e53935" />
-              <stop offset="100%" stopColor="#fb8c00" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <CircularProgress
-          size={25}
-          sx={{ "svg circle": { stroke: "url(#my_gradient)" } }}
-        />
-      </>
-    );
-  }
 
   const {
     register,
@@ -54,7 +36,9 @@ const SignupPage = () => {
     defaultValues: {
       firstName: "",
       lastName: "",
-      dob: "",
+      dob_day: "",
+      dob_month: "",
+      dob_year: "",
       gender: undefined,
       username: "",
       mobileno: "",
@@ -64,66 +48,25 @@ const SignupPage = () => {
     },
   });
 
+  const GradientCircularProgress = () => (
+    <>
+      <svg width={0} height={0}>
+        <defs>
+          <linearGradient id="my_gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#e53935" />
+            <stop offset="100%" stopColor="#fb8c00" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <CircularProgress
+        size={25}
+        sx={{ "svg circle": { stroke: "url(#my_gradient)" } }}
+      />
+    </>
+  );
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setAvatar(e.target.files[0]);
-    }
-  };
-
-  const signup = async (data: z.infer<typeof signupSchema>) => {
-    if (!avatar) {
-      setSnackbarSeverity("error");
-      setSnackbarMessage("Avatar is required");
-      setSnackbarOpen(true);
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append("avatar", avatar);
-      formData.append("firstName", data.firstName);
-      formData.append("lastName", data.lastName);
-      formData.append("dob", data.dob);
-      formData.append("gender", data.gender);
-      formData.append("username", data.username.toLowerCase());
-      formData.append("mobileno", data.mobileno);
-      formData.append("email", data.email.toLowerCase());
-      formData.append("password", data.password);
-
-      const baseUrl = `${window.location.protocol}//${window.location.host}`;
-      const verifyUrl = `${baseUrl}/verify/${data.username}`;
-      formData.append("verifyUrl", verifyUrl);
-
-      const res = await axios.post("/api/users/signup", formData);
-      if (res.status === 201) {
-        setSnackbarSeverity("success");
-        setSnackbarMessage(res.data.message);
-        setSnackbarOpen(true);
-        setTimeout(() => {
-          router.replace(`/verify/${data.username}`);
-        }, 1500);
-      }
-    } catch (error: unknown) {
-      let errorMessage = "Signup failed.";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      if (axios.isAxiosError(error)) {
-        // error is typed as AxiosError here
-        if (
-          error.response?.data &&
-          typeof error.response.data.message === "string"
-        ) {
-          errorMessage = error.response.data.message;
-        }
-      }
-
-      setSnackbarSeverity("error");
-      setSnackbarMessage(errorMessage);
-      setSnackbarOpen(true);
-    } finally {
-      setIsSubmitting(false);
-    }
+    if (e.target.files?.[0]) setAvatar(e.target.files[0]);
   };
 
   const handleCloseSnackbar = (
@@ -134,15 +77,71 @@ const SignupPage = () => {
     setSnackbarOpen(false);
   };
 
+  const signup = async (data: z.infer<typeof signupSchema>) => {
+    if (!avatar) {
+      setSnackbarSeverity("error");
+      setSnackbarMessage("Avatar is required");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+
+      const { dob_day, dob_month, dob_year, ...rest } = data;
+      const dob = `${dob_year}-${dob_month.padStart(2, "0")}-${dob_day.padStart(
+        2,
+        "0"
+      )}`;
+
+      formData.append("avatar", avatar);
+      formData.append("firstName", data.firstName);
+      formData.append("lastName", data.lastName);
+      formData.append("username", data.username.toLowerCase());
+      formData.append("dob", dob);
+      formData.append("gender", data.gender);
+      formData.append("mobileno", data.mobileno);
+      formData.append("email", data.email.toLowerCase());
+      formData.append("password", data.password);
+
+      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      formData.append("verifyUrl", `${baseUrl}/verify/${data.username}`);
+
+      const res = await axios.post("/api/users/signup", formData);
+
+      if (res.status === 201) {
+        setSnackbarSeverity("success");
+        setSnackbarMessage(res.data.message);
+        setSnackbarOpen(true);
+        setTimeout(() => router.replace(`/verify/${data.username}`), 1500);
+      }
+    } catch (error: any) {
+      const message =
+        axios.isAxiosError(error) &&
+        typeof error.response?.data?.message === "string"
+          ? error.response.data.message
+          : error?.message || "Signup failed.";
+
+      setSnackbarSeverity("error");
+      setSnackbarMessage(message);
+      setSnackbarOpen(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full min-h-screen justify-center items-center bg-[#FFF5F5] p-6">
-      <h1 className="text-5xl font-extrabold mb-6 tracking-tight text-red-600">
+      <h1 className="text-5xl font-bold mb-6 tracking-tight text-red-600">
         VibeBox
       </h1>
-      <div className="flex flex-col justify-center items-center shadow-2xl p-8 border border-red-600 rounded-3xl bg-white max-w-lg w-full">
+      <div className="flex flex-col justify-center items-center shadow-2xl px-8 py-6 border border-red-600 rounded-3xl bg-white max-w-xl w-full">
         <h1 className="text-3xl font-bold mb-4 text-center text-red-600 tracking-wide">
           Create Your Account
         </h1>
+
         <form
           className="flex flex-col items-center space-y-4 w-full"
           onSubmit={handleSubmit(signup)}
@@ -175,7 +174,8 @@ const SignupPage = () => {
           <small className="text-gray-500 text-xs -mt-2">
             Click the circle to upload an avatar
           </small>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-2 gap-4 w-full">
             <div>
               <input
                 {...register("firstName")}
@@ -201,6 +201,7 @@ const SignupPage = () => {
               )}
             </div>
           </div>
+
           <input
             {...register("username")}
             className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:border-red-500 placeholder:text-gray-400"
@@ -209,28 +210,64 @@ const SignupPage = () => {
           {errors.username && (
             <p className="text-red-500 text-xs">{errors.username.message}</p>
           )}
-          <input
-            {...register("dob")}
-            type="date"
-            className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:border-red-500 text-gray-400"
-          />
-          {errors.dob && (
-            <p className="text-red-500 text-xs">{errors.dob.message}</p>
-          )}
-
-          <select
-            {...register("gender")}
-            className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:border-red-500 text-gray-400"
-          >
-            <option value="">Select Gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="custom">Custom</option>
-          </select>
-          {errors.gender && (
-            <p className="text-red-500 text-xs">{errors.gender.message}</p>
-          )}
-
+          <div className="w-full flex items-center border border-gray-300 py-2 rounded-lg justify-around hover:border-red-500">
+            <label className="font-semibold text-gray-800">Date of Birth</label>
+            <div className="flex gap-2">
+              <select {...register("dob_day")} className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500">
+                <option value="">Day</option>
+                {[...Array(31)].map((_, i) => (
+                  <option key={i + 1}>{i + 1}</option>
+                ))}
+              </select>
+              <select {...register("dob_month")} className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500">
+                <option value="">Month</option>
+                {[
+                  "Jan",
+                  "Feb",
+                  "Mar",
+                  "Apr",
+                  "May",
+                  "Jun",
+                  "Jul",
+                  "Aug",
+                  "Sep",
+                  "Oct",
+                  "Nov",
+                  "Dec",
+                ].map((m, i) => (
+                  <option key={m} value={i + 1}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <select {...register("dob_year")} className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500">
+                <option value="">Year</option>
+                {Array.from({ length: 100 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return <option key={year}>{year}</option>;
+                })}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center border border-gray-300 rounded-xl py-1 w-full hover:border-red-500 justify-around">
+            <label className="font-semibold text-gray-800">Gender</label>
+            <div className="flex gap-4 py-1">
+              {["Female", "Male", "Other"].map((label) => (
+                <label
+                  key={label}
+                  className="flex px-3 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-32 items-center justify-between peer-checked:border-red-500"
+                >
+                  <span className="text-gray-700">{label}</span>
+                  <input
+                    type="radio"
+                    value={label.toLowerCase()}
+                    {...register("gender")}
+                    className="peer accent-red-500"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
           <input
             {...register("mobileno")}
             type="number"
@@ -240,7 +277,6 @@ const SignupPage = () => {
           {errors.mobileno && (
             <p className="text-red-500 text-xs">{errors.mobileno.message}</p>
           )}
-
           <input
             {...register("email")}
             type="email"
@@ -250,42 +286,38 @@ const SignupPage = () => {
           {errors.email && (
             <p className="text-red-500 text-xs">{errors.email.message}</p>
           )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex gap-2">
             <div>
-              <label htmlFor="password" className="flex w-full">
-                <input
-                  {...register("password")}
-                  type={passwordShow ? "text" : "password"}
-                  placeholder="Password"
-                  className="border border-r-0 border-gray-300 p-3 rounded-l-lg w-full focus:outline-none focus:border-red-500 placeholder:text-gray-400"
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setPasswordShow(!passwordShow)}
-                  className={`text-gray-500 border-gray-300 rounded-none rounded-r-lg hover:bg-white border border-l-0 bg-transparent p-3 ${
-                    isFocused ? "outline-none border-red-500 border-l-0" : ""
-                  }`}
-                >
-                  {passwordShow ? (
-                    <VisibilityOff className="w-5 h-5" />
-                  ) : (
-                    <Visibility className="w-5 h-5" />
-                  )}
-                </button>
-              </label>
+              <input
+                {...register("password")}
+                type={passwordShow ? "text" : "password"}
+                placeholder="Password"
+                className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:border-red-500 placeholder:text-gray-400"
+              />
               {errors.password && (
                 <p className="text-red-500 text-xs">
                   {errors.password.message}
                 </p>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => setPasswordShow(!passwordShow)}
+              className={`text-gray-500 rounded-lg hover:bg-white border bg-transparent p-3 h-12.5 hover:border-orange-500 ${
+                passwordShow ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              {passwordShow ? (
+                <VisibilityOff className="w-5 h-5" />
+              ) : (
+                <Visibility className="w-5 h-5" />
+              )}
+            </button>
             <div>
               <input
                 {...register("confirmPassword")}
                 type={passwordShow ? "text" : "password"}
-                className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:border-red-500 placeholder:text-gray-400"
+                className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:border-red-500 placeholder:text-gray-400"
                 placeholder="Confirm Password"
               />
               {errors.confirmPassword && (
@@ -299,10 +331,9 @@ const SignupPage = () => {
             By creating an account, I consent to the processing of my personal
             data in accordance with the <b>PRIVACY POLICY</b>
           </span>
-
           <button
             type="submit"
-            className="bg-red-600 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition cursor-pointer disabled:cursor-not-allowed"
+            className="bg-red-600 text-white font-bold py-3 rounded-xl w-full hover:bg-orange-500 transition cursor-pointer disabled:bg-orange-500 disabled:cursor-not-allowed"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
@@ -327,26 +358,12 @@ const SignupPage = () => {
         </p>
       </div>
 
-      <Snackbar
+      <CustomSnackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
+        severity={snackbarSeverity}
+        message={snackbarMessage}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbarSeverity}
-          variant="filled"
-          sx={{
-            alignItems: "center",
-            width: "100%",
-            fontSize: "1.2rem",
-            borderRadius: 2,
-          }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      />
     </div>
   );
 };

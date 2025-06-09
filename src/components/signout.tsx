@@ -2,9 +2,8 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
 import LogoutIcon from "@mui/icons-material/Logout";
+import CustomSnackbar from "./CustomSnackbar";
 
 const SignOut = () => {
   const router = useRouter();
@@ -66,26 +65,12 @@ const SignOut = () => {
         <p>Logout</p> <LogoutIcon sx={{ fontSize: 15 }} />
       </button>
 
-      <Snackbar
+      <CustomSnackbar
         open={snackbarOpen}
-        autoHideDuration={4000}
+        severity={snackbarSeverity}
+        message={snackbarMessage}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbarSeverity}
-          variant="filled"
-          sx={{
-            fontSize: "1.2rem",
-            borderRadius: 2,
-            alignItems: "center",
-            width: "100%",
-          }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+      />
     </div>
   );
 };
