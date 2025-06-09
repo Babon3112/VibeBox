@@ -107,13 +107,15 @@ const SignupPage = () => {
       let errorMessage = "Signup failed.";
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error &&
-        typeof (error as any).response?.data?.message === "string"
-      ) {
-        errorMessage = (error as any).response.data.message;
+      }
+      if (axios.isAxiosError(error)) {
+        // error is typed as AxiosError here
+        if (
+          error.response?.data &&
+          typeof error.response.data.message === "string"
+        ) {
+          errorMessage = error.response.data.message;
+        }
       }
 
       setSnackbarSeverity("error");
