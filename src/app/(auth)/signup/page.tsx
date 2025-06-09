@@ -87,7 +87,7 @@ const SignupPage = () => {
     try {
       const formData = new FormData();
 
-      const { dob_day, dob_month, dob_year, ...rest } = data;
+      const { dob_day, dob_month, dob_year } = data;
       const dob = `${dob_year}-${dob_month.padStart(2, "0")}-${dob_day.padStart(
         2,
         "0"
@@ -114,12 +114,17 @@ const SignupPage = () => {
         setSnackbarOpen(true);
         setTimeout(() => router.replace(`/verify/${data.username}`), 1500);
       }
-    } catch (error: any) {
-      const message =
-        axios.isAxiosError(error) &&
-        typeof error.response?.data?.message === "string"
-          ? error.response.data.message
-          : error?.message || "Signup failed.";
+    } catch (error: unknown) {
+      let message = "Signup failed.";
+      if (axios.isAxiosError(error)) {
+        if (typeof error.response?.data?.message === "string") {
+          message = error.response.data.message;
+        } else if (typeof error.message === "string") {
+          message = error.message;
+        }
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
 
       setSnackbarSeverity("error");
       setSnackbarMessage(message);
@@ -210,13 +215,19 @@ const SignupPage = () => {
           <div className="w-full flex items-center border border-gray-300 py-2 rounded-lg justify-around hover:border-red-500">
             <label className="font-semibold text-gray-800">Date of Birth</label>
             <div className="flex gap-2">
-              <select {...register("dob_day")} className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500">
+              <select
+                {...register("dob_day")}
+                className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500"
+              >
                 <option value="">Day</option>
                 {[...Array(31)].map((_, i) => (
                   <option key={i + 1}>{i + 1}</option>
                 ))}
               </select>
-              <select {...register("dob_month")} className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500">
+              <select
+                {...register("dob_month")}
+                className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500"
+              >
                 <option value="">Month</option>
                 {[
                   "Jan",
@@ -237,7 +248,10 @@ const SignupPage = () => {
                   </option>
                 ))}
               </select>
-              <select {...register("dob_year")} className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500">
+              <select
+                {...register("dob_year")}
+                className="flex px-2 py-1 border border-gray-300 rounded-md cursor-pointer transition-all duration-200 hover:border-red-500 w-28 items-center justify-between peer-checked:border-red-500"
+              >
                 <option value="">Year</option>
                 {Array.from({ length: 100 }, (_, i) => {
                   const year = new Date().getFullYear() - i;
