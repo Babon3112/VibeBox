@@ -16,9 +16,6 @@ import CustomSnackbar from "@/components/CustomSnackbar";
 const SignupPage = () => {
   const router = useRouter();
   const [avatar, setAvatar] = useState<File | null>(null);
-  const [dob_day, setDob_day] = useState("");
-  const [dob_month, setDob_month] = useState("");
-  const [dob_year, setDob_year] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordShow, setPasswordShow] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
